@@ -10,8 +10,17 @@ st.write('A fully integrated, memory enabled AI Assistant')
 # 1. Sidebar
 with st.sidebar:
     st.header('⚙️ Configuration')
-    user_api_key = st.text_input('Enter your Groq api key:', type='password')
-    st.info('Your key is required to wake up the AI brain')
+    user_api_key = st.text_input('Enter your Groq API Key:', type='password')
+    submit_key = st.button('Submit API Key ✅')
+
+    if submit_key and user_api_key:
+        st.session_state.api_key = user_api_key
+        st.success('API Key saved!')
+    elif submit_key and not user_api_key:
+        st.error('Please enter an API key first!')
+
+    if "api_key" in st.session_state:
+        st.info('🔑 API Key is active')
 
 # 2. Memory vault
 if "messages" not in st.session_state:
@@ -22,11 +31,11 @@ for msg in st.session_state.messages:
     with st.chat_message(msg['role']):
         st.markdown(msg['content'])
 
-# 4. The input box (pinned to the bottom)
+# 4. The input box
 if user_query := st.chat_input('Message the AI....'):
 
-    if not user_api_key:
-        st.error('Please enter API Key in the sidebar first')
+    if "api_key" not in st.session_state:
+        st.error('Please enter and submit your API Key in the sidebar first!')
 
     else:
         # Display the user message instantly
@@ -39,7 +48,7 @@ if user_query := st.chat_input('Message the AI....'):
         llm = ChatGroq(
             temperature=0.7,
             model_name='llama-3.3-70b-versatile',
-            api_key=user_api_key
+            api_key=st.session_state.api_key
         )
 
         # Convert session messages to LangChain message objects
@@ -53,11 +62,11 @@ if user_query := st.chat_input('Message the AI....'):
         # Call the AI
         with st.spinner('AI is thinking....'):
             response = llm.invoke(langchain_messages)
-            bot_answer = response.content  # ✅ consistent variable name
+            bot_answer = response.content
 
-        # Display the bot message instantly
+        # Display the bot message
         with st.chat_message('assistant'):
             st.markdown(bot_answer)
 
-        # Save the bot message to the vault ✅ fixed: was bot_response (undefined)
+        # Save bot message to vault
         st.session_state.messages.append({"role": "assistant", "content": bot_answer})
